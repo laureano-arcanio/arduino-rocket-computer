@@ -1,13 +1,3 @@
-/*
-
-   Flight Computer Version 2.01 SMART APOGEE (ONE STAGE ROCKET)
-
-   Contact information
-   -------------------
-   author: Danilo Nascimento
-   e-mail: ndanilo8@hotmail.com
-*/
-
 #include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
