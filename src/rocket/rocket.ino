@@ -1,3 +1,22 @@
+/*
+
+  Arduino Rocket Computer
+
+  Authors:
+  -------------------
+    Laureano Arcanio
+    Jeremias Giorgi
+    Martiniano Arcanio
+
+  Cointact Info
+  -------------------
+    laureano.arcanio@gmail.com
+
+    
+    Based off the work of Danilo Nascimento / ndanilo8@hotmail.com
+*/
+
+
 #include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
@@ -5,14 +24,13 @@
 #include <MPU6050.h>
 #include <Servo.h>
 
-//DEBUGGING->>>VERBOSE MODE1
 #define DEBUG //uncomment to start debug mode
 
 // Modules
 Servo servo;
 MPU6050 mpu;
-int16_t ax, ay, az;
 Adafruit_BMP280 bmp;
+int16_t ax, ay, az;
 
 const int chipSelect = 10;
 
@@ -41,14 +59,12 @@ boolean liftoff = false;
 // consecutive measures < apogee to run before apogee confirmation
 unsigned long measures = 3;
 
-
 // Pin Out
 const int redLed = 9;
 const int greenLed = 8;
 const int blueLed = 7;
 const int pinApogee = A0;
 const int buzzer = 6;
-
 
 //*********Kalman filter Variables*****************
 float f_1 = 1.00000;
@@ -119,8 +135,6 @@ void setup()
 
 void loop()
 {
-
-
   currentMillis = millis();
   statusMonitor();
   if (err == true)
@@ -171,5 +185,4 @@ void loop()
   }
 
   dataLogger();
-
 }
