@@ -54,7 +54,7 @@ long lastAltitude = 0;
 
 boolean liftoff = false;
 boolean apogeeHasFired = false;
-boolean landed = true;
+boolean landed = false;
 
 boolean err = false; //Error check
 
