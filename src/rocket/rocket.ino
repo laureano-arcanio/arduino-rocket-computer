@@ -8,7 +8,7 @@
     Jeremias Giorgi
     Martiniano Arcanio
 
-  Cointact Info
+  Contact Info
   -------------------
     laureano.arcanio@gmail.com
 
@@ -52,9 +52,11 @@ float rawAltitude = 0;
 long liftoffAltitude = 2;
 long lastAltitude = 0;
 
-boolean apogeeHasFired = false;
-boolean err = false; //Error check
 boolean liftoff = false;
+boolean apogeeHasFired = false;
+boolean landed = true;
+
+boolean err = false; //Error check
 
 // consecutive measures < apogee to run before apogee confirmation
 unsigned long measures = 3;
@@ -182,6 +184,7 @@ void loop()
   if (apogeeHasFired == true && liftoff == true && currAltitude <= liftoffAltitude)
   {
     liftoff = false;
+    landed = true;
   }
 
   dataLogger();

@@ -19,6 +19,10 @@ void statusMonitor() {
       digitalWrite(greenLed, HIGH);
       tone(buzzer, 1000);
     }
+    if (landed == true)
+    {
+      playNeverGonnaGiveYouUp();
+    }
   }
   else {
     digitalWrite(greenLed, LOW);
