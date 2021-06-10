@@ -10,6 +10,7 @@ def main():
     import csv
 
     x0 = 0
+    xPrev = 0
     xN = 0
     XMax = 0
     deltaLiftOff = 1
@@ -34,7 +35,10 @@ def main():
                     print("Apogee at: " + str(x))
                     xApogee = x
                 else:
-                    apogeeThreshhold -= 1
+                    if x != xPrev:
+                        apogeeThreshhold -= 1
+            
+            xPrev = x
 
 if __name__ == '__main__':
     main()

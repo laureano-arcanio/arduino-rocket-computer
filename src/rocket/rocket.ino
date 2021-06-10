@@ -23,10 +23,12 @@
 #include <Adafruit_BMP280.h>
 #include <MPU6050.h>
 #include <Servo.h>
+#include <SimpleTimer.h>
 
 #define DEBUG //uncomment to start debug mode
 
 // Modules
+SimpleTimer timer;
 Servo servo;
 MPU6050 mpu;
 Adafruit_BMP280 bmp;
@@ -34,23 +36,22 @@ int16_t ax, ay, az;
 
 const int chipSelect = 10;
 
-// Status monitur interval
-unsigned long interval = 1000; // timer for buzzer
-long previousMillis = 0;
-unsigned long currentMillis = 0;
+boolean allOn = true;
 
-//ground level altitude
-long initialAltitude;
+
 // Ground level Presssure 
 float P0;
 
 //current altitude
-long currAltitude;
+float currAltitude;
 float rawAltitude = 0;
 
 //Apogee altitude
-long liftoffAltitude = 2;
+//ground level altitude
+long initialAltitude;
+long liftoffAltitude = 1;
 long lastAltitude = 0;
+long prevAltitude = 0;
 
 boolean liftoff = false;
 boolean apogeeHasFired = false;
@@ -59,7 +60,7 @@ boolean landed = false;
 boolean err = false; //Error check
 
 // consecutive measures < apogee to run before apogee confirmation
-unsigned long measures = 3;
+int measures = 10;
 
 // Pin Out
 const int redLed = 9;
@@ -82,10 +83,13 @@ float kalman_p_temp;
 
 void setup()
 {
+
+  timer.setInterval(1000, statusMonitor);
+
   KalmanInit();
 
   #ifdef DEBUG
-    Serial.begin(115200);
+    Serial.begin(9600);
   #endif
     Wire.begin();
 
@@ -136,9 +140,10 @@ void setup()
 }
 
 void loop()
-{
-  currentMillis = millis();
-  statusMonitor();
+{ 
+
+  timer.run();
+
   if (err == true)
   {
     return;
@@ -150,6 +155,7 @@ void loop()
   // Detect Liftoff
   if ((currAltitude > liftoffAltitude) && liftoff == false)
   {
+    //Serial.println("Lift Off");
     liftoff = true;
   }
 
@@ -159,18 +165,24 @@ void loop()
     if (currAltitude >= lastAltitude )
     {
       lastAltitude = currAltitude;
+      measures = 10;
     }
     else
     {
       if (measures == 0 and !apogeeHasFired)
       {
         apogeeHasFired = true;
+        //Serial.println("Apogee");
       }
       else
       {
-        measures -= 1;
+        if (prevAltitude != currAltitude)
+        {
+          measures -= 1;
+        }
       }
     }
+    prevAltitude = currAltitude;
   }
 
   // Deploy Parachute / Rescue secuence
@@ -185,6 +197,7 @@ void loop()
   {
     liftoff = false;
     landed = true;
+    //Serial.println("landed");
   }
 
   dataLogger();

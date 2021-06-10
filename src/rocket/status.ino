@@ -1,30 +1,31 @@
 void statusMonitor() {
-
-  if(currentMillis - previousMillis > interval) {
-    // save the last time you blinked the LED 
-    previousMillis = currentMillis;   
-
+  if (allOn == true) {
+    allOn = false;
     if (liftoff == true)
     {
       digitalWrite(greenLed, HIGH);
     }
     if (apogeeHasFired == true)
     {
-      tone(buzzer, 2000);
+      tone(buzzer, 440);
       digitalWrite(blueLed, HIGH);
     }
     if (err == true) {
       digitalWrite(redLed, HIGH);
       digitalWrite(blueLed, HIGH);
       digitalWrite(greenLed, HIGH);
-      tone(buzzer, 1000);
+      tone(buzzer, 440);
     }
     if (landed == true)
     {
-      playNeverGonnaGiveYouUp();
+      //playNeverGonnaGiveYouUp();
+      tone(buzzer, 440);
+      digitalWrite(redLed, HIGH);
     }
   }
-  else {
+  else 
+  {
+    allOn = true;
     digitalWrite(greenLed, LOW);
     digitalWrite(blueLed, LOW);
     digitalWrite(redLed, LOW);
