@@ -44,7 +44,7 @@ void init_Led() {
   digitalWrite(greenLed, HIGH);
   digitalWrite(blueLed, HIGH);
   tone(buzzer, 440);
-  delay(2000);
+  delay(1000);
   noTone(buzzer);
   digitalWrite(redLed, LOW);
   digitalWrite(greenLed, LOW);

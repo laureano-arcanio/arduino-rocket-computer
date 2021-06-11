@@ -20,12 +20,12 @@
 #include <SD.h>
 #include <Adafruit_BMP280.h>
 #include <MPU6050.h>
-#include <Servo.h>
+//#include <Servo.h>
 #include <SimpleTimer.h>
 
 // Modules
 SimpleTimer timer;
-Servo servo;
+//Servo servo;
 MPU6050 mpu;
 Adafruit_BMP280 bmp;
 int16_t ax, ay, az;
@@ -110,7 +110,7 @@ void setup()
   pinMode(greenLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
 
-  servo.attach(pinApogee, 1000, 2000);
+  // servo.attach(pinApogee, 1000, 2000);
 
   //number of measures to do to detect Liftoff & Apogee
   P0 =  bmp.readPressure() / 100;
@@ -142,8 +142,8 @@ void setup()
 
 void loop()
 { 
-  Serial.println(F("Status: "));
-  Serial.print(status);
+  // Serial.println(F("Status: "));
+  // Serial.print(status);
   timer.run();
 
   if (status < STATUS_READY)
@@ -152,7 +152,7 @@ void loop()
   }
 
   rawAltitude = bmp.readAltitude(P0);
-  currAltitude = (KalmanCalc(rawAltitude) - initialAltitude);
+  currAltitude = KalmanCalc(rawAltitude) - initialAltitude;
 
   // Detect Liftoff
   if ((currAltitude > initialAltitude + 1) && status == STATUS_READY)
@@ -161,19 +161,19 @@ void loop()
     status = STATUS_LIFTOFF;
   }
 
-  //detect Apogee
+  // //detect Apogee
   if (status == STATUS_LIFTOFF)
   {
-    if (currAltitude >= lastAltitude )
+    if (currAltitude >= lastAltitude)
     {
       lastAltitude = currAltitude;
       measures = 15;
     }
     else
     {
-      if (measures == 0 and status == STATUS_LIFTOFF)
+      if (measures == 0)
       {
-        status == STATUS_APOGEE;
+        status = STATUS_APOGEE;
         //Serial.println("Apogee");
       }
       else
@@ -184,21 +184,24 @@ void loop()
         }
       }
     }
-    prevAltitude = currAltitude;
   }
+
 
   // Deploy Parachute / Rescue secuence
   if (status == STATUS_APOGEE)
   {
     // Eject nose cone with servo
-    servo.write(360);
+    // servo.write(360);
   }
 
   // Detect Landing
-  if (status == STATUS_APOGEE and abs(currAltitude - initialAltitude) < 2)
+  if (status == STATUS_APOGEE)
   {
-    status = STATUS_LANDED;
-    //Serial.println("landed");
+    if (abs(currAltitude - initialAltitude) < 2)
+    {
+      status = STATUS_LANDED;
+      //Serial.println("landed");
+    }
   }
 
   if (status >= STATUS_LIFTOFF and status < STATUS_LANDED)
