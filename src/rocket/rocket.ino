@@ -36,21 +36,20 @@ boolean allOn = true;
 
 // Ground level Presssure 
 float P0;
-
 float currAltitude;
 float rawAltitude = 0;
 
-long initialAltitude = 0;
-long lastAltitude = 0;
-long prevAltitude = 0;
+float initialAltitude = 0;
+float lastAltitude = 0;
+float prevAltitude = 0;
 
 // Status variable
-const int STATUS_READY = 20;
-const int STATUS_LIFTOFF = 40;
-const int STATUS_APOGEE = 60;
-const int STATUS_LANDED = 80;
+const unsigned int STATUS_READY = 20;
+const unsigned int STATUS_LIFTOFF = 40;
+const unsigned int STATUS_APOGEE = 60;
+const unsigned int STATUS_LANDED = 80;
 
-int status = 20;
+unsigned int status = 20;
   // 1x Errors
   // 10 = SD Error
   // 11 = BMP Error
@@ -60,7 +59,6 @@ int status = 20;
   // 40 = Lisftoff 
   // 60 = Apogee
   // 80 = Landed 
-  
 
 boolean err = false; //Error check
 
@@ -95,7 +93,6 @@ void setup()
 
   KalmanInit();
  
-
   SDcardInit(); //SD card: see if the card is present and can be initialized:
   bmpInit(); //Pressure Sensor Init & Check
   mpuInit(); //Accel Sensor Init & Check
