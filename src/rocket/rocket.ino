@@ -12,8 +12,6 @@
   -------------------
     laureano.arcanio@gmail.com
 
-    
-    Based off the work of Danilo Nascimento / ndanilo8@hotmail.com
 */
 
 
@@ -24,8 +22,6 @@
 #include <MPU6050.h>
 #include <Servo.h>
 #include <SimpleTimer.h>
-
-#define DEBUG //uncomment to start debug mode
 
 // Modules
 SimpleTimer timer;
@@ -38,7 +34,6 @@ const int chipSelect = 10;
 
 boolean allOn = true;
 
-
 // Ground level Presssure 
 float P0;
 
@@ -48,8 +43,7 @@ float rawAltitude = 0;
 
 //Apogee altitude
 //ground level altitude
-long initialAltitude;
-long liftoffAltitude = 1;
+long initialAltitude = 0;
 long lastAltitude = 0;
 long prevAltitude = 0;
 
@@ -57,10 +51,29 @@ boolean liftoff = false;
 boolean apogeeHasFired = false;
 boolean landed = false;
 
+
+// Status variable
+const int STATUS_READY = 20;
+const int STATUS_LIFTOFF = 40;
+const int STATUS_APOGEE = 60;
+const int STATUS_LANDED = 80;
+
+int status = 20;
+  // 1x Errors
+  // 10 = SD Error
+  // 11 = BMP Error
+  // 12 = MPU
+
+  // 20 = Ready
+  // 40 = Lisftoff 
+  // 60 = Apogee
+  // 80 = Landed 
+  
+
 boolean err = false; //Error check
 
 // consecutive measures < apogee to run before apogee confirmation
-int measures = 10;
+int measures = 15;
 
 // Pin Out
 const int redLed = 9;
@@ -83,15 +96,13 @@ float kalman_p_temp;
 
 void setup()
 {
-
-  timer.setInterval(1000, statusMonitor);
+  Serial.begin(9600);
+  Wire.begin();
+  
+  timer.setInterval(500, statusMonitor);
 
   KalmanInit();
-
-  #ifdef DEBUG
-    Serial.begin(9600);
-  #endif
-    Wire.begin();
+ 
 
   SDcardInit(); //SD card: see if the card is present and can be initialized:
   bmpInit(); //Pressure Sensor Init & Check
@@ -133,18 +144,20 @@ void setup()
 
   initialAltitude = (sum / 10.0);
 
-  if (err != true)
+  if (status >= 20)
   {
+    status = STATUS_READY;
     init_Led();
   }
 }
 
 void loop()
 { 
-
+  Serial.println(F("Status: "));
+  Serial.print(status);
   timer.run();
 
-  if (err == true)
+  if (status < STATUS_READY)
   {
     return;
   }
@@ -153,25 +166,25 @@ void loop()
   currAltitude = (KalmanCalc(rawAltitude) - initialAltitude);
 
   // Detect Liftoff
-  if ((currAltitude > liftoffAltitude) && liftoff == false)
+  if ((currAltitude > initialAltitude + 1) && status == STATUS_READY)
   {
     //Serial.println("Lift Off");
-    liftoff = true;
+    status = STATUS_LIFTOFF;
   }
 
   //detect Apogee
-  if (liftoff == true)
+  if (status == STATUS_LIFTOFF)
   {
     if (currAltitude >= lastAltitude )
     {
       lastAltitude = currAltitude;
-      measures = 10;
+      measures = 15;
     }
     else
     {
       if (measures == 0 and !apogeeHasFired)
       {
-        apogeeHasFired = true;
+        status == STATUS_APOGEE;
         //Serial.println("Apogee");
       }
       else
@@ -186,19 +199,21 @@ void loop()
   }
 
   // Deploy Parachute / Rescue secuence
-  if (apogeeHasFired == true)
+  if (status == STATUS_APOGEE)
   {
     // Eject nose cone with servo
     servo.write(360);
   }
 
   // Detect Landing
-  if (apogeeHasFired == true && liftoff == true && currAltitude <= liftoffAltitude)
+  if (status == STATUS_APOGEE and abs(currAltitude - initialAltitude) < 2)
   {
-    liftoff = false;
-    landed = true;
+    status = STATUS_LANDED;
     //Serial.println("landed");
   }
 
-  dataLogger();
+  if (status >= STATUS_LIFTOFF and status < STATUS_LANDED)
+  {
+    dataLogger();
+  }
 }

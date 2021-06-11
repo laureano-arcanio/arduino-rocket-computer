@@ -1,26 +1,28 @@
 void statusMonitor() {
   if (allOn == true) {
     allOn = false;
-    if (liftoff == true)
+    if (status == STATUS_LIFTOFF)
     {
       digitalWrite(greenLed, HIGH);
+      tone(buzzer, 587);
     }
-    if (apogeeHasFired == true)
+    if (status == STATUS_APOGEE)
     {
       tone(buzzer, 440);
       digitalWrite(blueLed, HIGH);
     }
-    if (err == true) {
-      digitalWrite(redLed, HIGH);
-      digitalWrite(blueLed, HIGH);
-      digitalWrite(greenLed, HIGH);
-      tone(buzzer, 440);
-    }
-    if (landed == true)
+    if (status == STATUS_LANDED)
     {
       //playNeverGonnaGiveYouUp();
-      tone(buzzer, 440);
+      tone(buzzer, 880);
       digitalWrite(redLed, HIGH);
+    }
+    // Error codes ar coded 10 to 19
+    if (status < 20) {
+      digitalWrite(redLed, HIGH);
+      digitalWrite(blueLed, HIGH);
+      digitalWrite(greenLed, HIGH);
+      tone(buzzer, 440);
     }
   }
   else 
@@ -38,18 +40,13 @@ void err_Led() {
 }
 
 void init_Led() {
-  for (int j = 0; j < 3; j++) {
-    digitalWrite(redLed, HIGH);
-    delay(100);
-    digitalWrite(redLed, LOW);
-    delay(100);
-    digitalWrite(greenLed, HIGH);
-    delay(100);
-    digitalWrite(greenLed, LOW);
-    delay(100);
-    digitalWrite(blueLed, HIGH);
-    delay(100);
-    digitalWrite(blueLed, LOW);
-    delay(500);
-  }
+  digitalWrite(redLed, HIGH);
+  digitalWrite(greenLed, HIGH);
+  digitalWrite(blueLed, HIGH);
+  tone(buzzer, 440);
+  delay(2000);
+  noTone(buzzer);
+  digitalWrite(redLed, LOW);
+  digitalWrite(greenLed, LOW);
+  digitalWrite(blueLed, LOW);
 }

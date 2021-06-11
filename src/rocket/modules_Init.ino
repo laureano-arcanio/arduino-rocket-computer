@@ -1,11 +1,21 @@
+void SDcardInit()
+{
+  //SD card init
+  if (!SD.begin(chipSelect)) { // see if the card is present and can be initialized:
+    //Serial.println("Card failed, or not present");
+    status = 10;
+  }
+}
+
 void bmpInit()
 {
   if (!bmp.begin()) //Presure Sensor Initialisation
   {
     //Serial.println("BMP sensor failed!");
-    err = true;
+    status = 11;
   }
 }
+
 
 void mpuInit()
 {
@@ -14,15 +24,8 @@ void mpuInit()
   if (!mpu.testConnection()) //Test Connection
   {
     //Serial.println("MPU Failed!");
-    err = true;
+    status = 12;
   }
 }
 
-void SDcardInit()
-{
-  //SD card init
-  if (!SD.begin(chipSelect)) { // see if the card is present and can be initialized:
-    //Serial.println("Card failed, or not present");
-    err = true;
-  }
-}
+
