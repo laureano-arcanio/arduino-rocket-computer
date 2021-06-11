@@ -37,20 +37,12 @@ boolean allOn = true;
 // Ground level Presssure 
 float P0;
 
-//current altitude
 float currAltitude;
 float rawAltitude = 0;
 
-//Apogee altitude
-//ground level altitude
 long initialAltitude = 0;
 long lastAltitude = 0;
 long prevAltitude = 0;
-
-boolean liftoff = false;
-boolean apogeeHasFired = false;
-boolean landed = false;
-
 
 // Status variable
 const int STATUS_READY = 20;
@@ -182,7 +174,7 @@ void loop()
     }
     else
     {
-      if (measures == 0 and !apogeeHasFired)
+      if (measures == 0 and status == STATUS_LIFTOFF)
       {
         status == STATUS_APOGEE;
         //Serial.println("Apogee");
