@@ -12,6 +12,10 @@
   -------------------
     laureano.arcanio@gmail.com
 
+    Based on work from
+    Boris du Reau / https://github.com/bdureau
+    Danilo Nascimento / ndanilo8@hotmail.com
+
 */
 
 
@@ -20,17 +24,15 @@
 #include <SD.h>
 #include <Adafruit_BMP280.h>
 #include <MPU6050.h>
-//#include <Servo.h>
+#include <Servo.h>
 #include <SimpleTimer.h>
 
 // Modules
 SimpleTimer timer;
-//Servo servo;
+Servo servo;
 MPU6050 mpu;
 Adafruit_BMP280 bmp;
 int16_t ax, ay, az;
-
-const int chipSelect = 10;
 
 boolean allOn = true;
 
@@ -49,6 +51,9 @@ const unsigned int STATUS_LIFTOFF = 40;
 const unsigned int STATUS_APOGEE = 60;
 const unsigned int STATUS_LANDED = 80;
 
+//
+const unsigned int SECURITY_DEPLOYMENT_TIME = 10000;
+
 unsigned int status = 20;
   // 1x Errors
   // 10 = SD Error
@@ -63,7 +68,7 @@ unsigned int status = 20;
 boolean err = false; //Error check
 
 // consecutive measures < apogee to run before apogee confirmation
-int measures = 15;
+unsigned int measures = 15;
 
 // Pin Out
 const int redLed = 9;
@@ -86,38 +91,48 @@ float kalman_p_temp;
 
 void setup()
 {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   Wire.begin();
-  
-  timer.setInterval(500, statusMonitor);
-
-  KalmanInit();
  
-  SDcardInit(); //SD card: see if the card is present and can be initialized:
-  bmpInit(); //Pressure Sensor Init & Check
-  mpuInit(); //Accel Sensor Init & Check
+  // Modules Init and checks
+  if (!SD.begin(10))
+  {
+    //Serial.println("Card failed, or not present");
+    status = 10;
+  }
+
+  if (!bmp.begin())
+  {
+    //Serial.println("BMP sensor failed!");
+    status = 11;
+  }
+
+  mpu.initialize(); //Accel/gyro Sensor Initialisation
+  if (!mpu.testConnection())
+  {
+    //Serial.println("MPU Failed!");
+    status = 12;
+  }
 
   //Initialise the Pyro & buzzer pins)
   pinMode(pinApogee, OUTPUT);
-  pinMode(buzzer, OUTPUT);
+  //pinMode(buzzer, OUTPUT);
 
   //Make sure that the output are turned off
-  digitalWrite(pinApogee, LOW);
-  digitalWrite(buzzer, LOW);
+  //digitalWrite(buzzer, LOW);
 
   //LED pins
   pinMode(redLed, OUTPUT);
   pinMode(greenLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
 
-  // servo.attach(pinApogee, 1000, 2000);
+  // Status timers
+  timer.setInterval(500, statusMonitor);
 
-  //number of measures to do to detect Liftoff & Apogee
+  KalmanInit();
   P0 =  bmp.readPressure() / 100;
 
-  // TODO debug this, not sure its needed
-  // Do some dummy altitude reading
-  // to initialise the Kalman filter
+  // initialise the Kalman filter
   for (int i = 0; i < 50; i++) {
     KalmanCalc(bmp.readAltitude(P0));
   }
@@ -128,24 +143,34 @@ void setup()
   for (int i = 0; i < 10; i++) {
     curr = KalmanCalc(bmp.readAltitude(P0));
     sum += curr;
-    delay(50);
+    //delay(50);
   }
 
   initialAltitude = (sum / 10.0);
 
-  if (status >= 20)
+  if (status == STATUS_READY)
   {
     status = STATUS_READY;
     init_Led();
+    // Servo Pin
+    servo.attach(pinApogee);
+    servo.write(0);
   }
 }
 
 void loop()
 { 
-  // Serial.println(F("Status: "));
-  // Serial.print(status);
   timer.run();
 
+  // Some module Erroed
+
+  // 25 deg close
+  // 0 deg Open
+  servo.write(25);
+  digitalWrite(blueLed, HIGH);
+
+  delay(2000);
+  return;
   if (status < STATUS_READY)
   {
     return;
@@ -191,7 +216,13 @@ void loop()
   if (status == STATUS_APOGEE)
   {
     // Eject nose cone with servo
-    // servo.write(360);
+    deployParachute();
+  }
+
+  // Make sure to deploy parachute in case all fails
+  if (millis() >= SECURITY_DEPLOYMENT_TIME)
+  {
+    deployParachute();
   }
 
   // Detect Landing
@@ -208,4 +239,12 @@ void loop()
   {
     dataLogger();
   }
+}
+
+
+void deployParachute()
+{
+  // 25 deg close
+  // 0 deg Open
+  servo.write(0);
 }
