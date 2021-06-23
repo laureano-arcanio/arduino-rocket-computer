@@ -1,4 +1,4 @@
-void dataLogger()
+  void dataLogger()
 {
   mpu.getAcceleration(&ax, &ay, &az);
   float aX = ax / 2048;
@@ -7,7 +7,7 @@ void dataLogger()
 
   String logLine = String (currAltitude) + ", " + String (rawAltitude) + ", " + String (sqrt(aX * aX + aY * aY + aZ * aZ)) + ", " +  String (millis()) + ", " + String (status);
   
-  File dataFile = SD.open("logs.txt", FILE_WRITE);
+  File dataFile = SD.open(filename, FILE_WRITE);
   if (dataFile) {
     dataFile.println(logLine);
     dataFile.close();

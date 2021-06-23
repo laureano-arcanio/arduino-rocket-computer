@@ -33,8 +33,10 @@ Servo servo;
 MPU6050 mpu;
 Adafruit_BMP280 bmp;
 int16_t ax, ay, az;
+File root;
 
 boolean allOn = true;
+String filename = "LOGS_1.txt";
 
 // Ground level Presssure 
 float P0;
@@ -89,9 +91,21 @@ float kalman_r;
 float kalman_x_temp;
 float kalman_p_temp;
 
+String getFileName(File dir, int numTabs) {
+  unsigned int fileCount = 1;
+  while (true) {
+    File entry =  dir.openNextFile();
+    if (! entry) {
+      break;
+    }
+    fileCount++;
+    entry.close();
+  }
+  return "LOGS_" + String(fileCount) + ".txt";
+}  
+
 void setup()
 {
-  //Serial.begin(9600);
   Wire.begin();
  
   // Modules Init and checks
@@ -99,6 +113,10 @@ void setup()
   {
     //Serial.println("Card failed, or not present");
     status = 10;
+  }
+  else {
+    root = SD.open("/");
+    filename = getFileName(root, 0);
   }
 
   if (!bmp.begin())
@@ -138,12 +156,12 @@ void setup()
   }
 
   //Read the lauch site altitude
-  long sum = 0;
-  long curr = 0;
+  float sum = 0;
+  float curr = 0;
   for (int i = 0; i < 10; i++) {
     curr = KalmanCalc(bmp.readAltitude(P0));
     sum += curr;
-    //delay(50);
+    delay(50);
   }
 
   initialAltitude = (sum / 10.0);
@@ -152,9 +170,10 @@ void setup()
   {
     status = STATUS_READY;
     init_Led();
-    // Servo Pin
+    // Initialize servo after all delays
+    // Servos won't play well when using delay
     servo.attach(pinApogee);
-    servo.write(0);
+    servo.write(25);
   }
 }
 
@@ -162,15 +181,12 @@ void loop()
 { 
   timer.run();
 
-  // Some module Erroed
+  if (millis() > 10000)
+//  {
+//   servo.write(0);
+//  }
+//  return;
 
-  // 25 deg close
-  // 0 deg Open
-  servo.write(25);
-  digitalWrite(blueLed, HIGH);
-
-  delay(2000);
-  return;
   if (status < STATUS_READY)
   {
     return;
@@ -182,7 +198,6 @@ void loop()
   // Detect Liftoff
   if ((currAltitude > initialAltitude + 1) && status == STATUS_READY)
   {
-    //Serial.println("Lift Off");
     status = STATUS_LIFTOFF;
   }
 
@@ -199,7 +214,6 @@ void loop()
       if (measures == 0)
       {
         status = STATUS_APOGEE;
-        //Serial.println("Apogee");
       }
       else
       {
@@ -220,7 +234,7 @@ void loop()
   }
 
   // Make sure to deploy parachute in case all fails
-  if (millis() >= SECURITY_DEPLOYMENT_TIME)
+  if (status == STATUS_LIFTOFF and millis() >= SECURITY_DEPLOYMENT_TIME)
   {
     deployParachute();
   }
@@ -231,7 +245,6 @@ void loop()
     if (abs(currAltitude - initialAltitude) < 2)
     {
       status = STATUS_LANDED;
-      //Serial.println("landed");
     }
   }
 
