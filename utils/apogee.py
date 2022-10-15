@@ -15,30 +15,56 @@ def main():
     XMax = 0
     deltaLiftOff = 1
     liftOf = False
-    apogeeThreshhold = 5
+
+    measures = 3
     xApogee = 0
 
-    with open('log.csv', newline='') as csvfile:
+    lastAltitude = 0
+
+    with open('log.txt', newline='') as csvfile:
         spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
 
 
         for row in spamreader:
-            x = int (row[0]) 
-            if x >= x0 + deltaLiftOff and not liftOf:
-                print("Lift Off " + str(x))
-                liftOf = True
-
-            if x >= XMax:
-                XMax = x
+            currAltitude = int (row[0]) 
+            if currAltitude > lastAltitude:
+                measures = 3
             else:
-                if apogeeThreshhold == 0 and not xApogee:
-                    print("Apogee at: " + str(x))
-                    xApogee = x
+                if measures == 0:
+                    print("Apogee at: " + str(currAltitude))
+                    print(row)
                 else:
-                    if x != xPrev:
-                        apogeeThreshhold -= 1
-            
-            xPrev = x
+                    if lastAltitude != currAltitude:
+                         measures -= 1
+            lastAltitude = currAltitude
+
+
+#   // //detect Apogee
+#   if (status == STATUS_LIFTOFF)
+#   {
+#     if (currAltitude >= lastAltitude)
+#     {
+#       lastAltitude = currAltitude;
+#       measures = 2;
+#     }
+#     else
+#     {
+#       if (measures == 0)
+#       {
+#         status = STATUS_APOGEE;
+#       }
+#       else
+#       {
+#         if (prevAltitude != currAltitude)
+#         {
+#           measures -= 1;
+#         }
+#       }
+#     }
+#   }
+
+
+
 
 if __name__ == '__main__':
     main()

@@ -14,24 +14,21 @@
 
     Based on work from
     Boris du Reau / https://github.com/bdureau
-    Danilo Nascimento / ndanilo8@hotmail.com
 
 */
-
 
 #include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
-#include <Adafruit_BMP280.h>
-#include <MPU6050.h>
+#include <Adafruit_BMP085.h>
+
 #include <Servo.h>
 #include <SimpleTimer.h>
 
 // Modules
 SimpleTimer timer;
 Servo servo;
-MPU6050 mpu;
-Adafruit_BMP280 bmp;
+Adafruit_BMP085 bmp;
 int16_t ax, ay, az;
 File root;
 
@@ -40,12 +37,11 @@ String filename = "LOGS_1.txt";
 
 // Ground level Presssure 
 float P0;
-float currAltitude;
+int currAltitude;
 float rawAltitude = 0;
 
 float initialAltitude = 0;
 float lastAltitude = 0;
-float prevAltitude = 0;
 
 // Status variable
 const unsigned int STATUS_READY = 20;
@@ -54,7 +50,7 @@ const unsigned int STATUS_APOGEE = 60;
 const unsigned int STATUS_LANDED = 80;
 
 //
-const unsigned int SECURITY_DEPLOYMENT_TIME = 10000;
+const unsigned int SECURITY_DEPLOYMENT_TIME = 15000;
 
 unsigned int status = 20;
   // 1x Errors
@@ -70,7 +66,7 @@ unsigned int status = 20;
 boolean err = false; //Error check
 
 // consecutive measures < apogee to run before apogee confirmation
-unsigned int measures = 15;
+unsigned int measures = 2;
 
 // Pin Out
 const int redLed = 9;
@@ -107,7 +103,29 @@ String getFileName(File dir, int numTabs) {
 void setup()
 {
   Wire.begin();
- 
+  //Serial.begin(9600);
+  
+  //LED pins
+  pinMode(redLed, OUTPUT);
+  pinMode(greenLed, OUTPUT);
+  pinMode(blueLed, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+  // Led / Buzzer test sequence
+  digitalWrite(redLed, HIGH);
+  delay(1000);
+  digitalWrite(greenLed, HIGH);
+  delay(1000);
+  digitalWrite(blueLed, HIGH);
+  delay(1000);
+  digitalWrite(redLed, LOW);
+  digitalWrite(blueLed, LOW);
+  digitalWrite(greenLed, LOW);
+
+  // Buzzer test
+  tone(buzzer, 440);
+  delay(500);
+  noTone(buzzer);
+
   // Modules Init and checks
   if (!SD.begin(10))
   {
@@ -125,13 +143,6 @@ void setup()
     status = 11;
   }
 
-  mpu.initialize(); //Accel/gyro Sensor Initialisation
-  if (!mpu.testConnection())
-  {
-    //Serial.println("MPU Failed!");
-    status = 12;
-  }
-
   //Initialise the Pyro & buzzer pins)
   pinMode(pinApogee, OUTPUT);
   //pinMode(buzzer, OUTPUT);
@@ -139,37 +150,42 @@ void setup()
   //Make sure that the output are turned off
   //digitalWrite(buzzer, LOW);
 
-  //LED pins
-  pinMode(redLed, OUTPUT);
-  pinMode(greenLed, OUTPUT);
-  pinMode(blueLed, OUTPUT);
 
   // Status timers
   timer.setInterval(500, statusMonitor);
 
   KalmanInit();
-  P0 =  bmp.readPressure() / 100;
+  float pressoureAccum = 0;
+  for (int i = 0; i < 10; i++) {
+    delay(100);
+    pressoureAccum += bmp.readPressure();
+  }
+
+  P0 = pressoureAccum / 10;
+
 
   // initialise the Kalman filter
   for (int i = 0; i < 50; i++) {
+    delay(10);
     KalmanCalc(bmp.readAltitude(P0));
   }
 
   //Read the lauch site altitude
   float sum = 0;
-  float curr = 0;
   for (int i = 0; i < 10; i++) {
-    curr = KalmanCalc(bmp.readAltitude(P0));
-    sum += curr;
+    sum += KalmanCalc(bmp.readAltitude(P0));;
     delay(50);
   }
 
   initialAltitude = (sum / 10.0);
+  //Serial.println("Initial P");
+  //Serial.println(P0);
+  //Serial.println("Initial Altitude");
+  //Serial.println(initialAltitude);
 
   if (status == STATUS_READY)
   {
     status = STATUS_READY;
-    init_Led();
     // Initialize servo after all delays
     // Servos won't play well when using delay
     servo.attach(pinApogee);
@@ -181,13 +197,7 @@ void loop()
 { 
   timer.run();
 
-  if (millis() > 10000)
-//  {
-//   servo.write(0);
-//  }
-//  return;
-
-  if (status < STATUS_READY)
+  if (status < STATUS_READY || status == STATUS_LANDED)
   {
     return;
   }
@@ -204,10 +214,9 @@ void loop()
   // //detect Apogee
   if (status == STATUS_LIFTOFF)
   {
-    if (currAltitude >= lastAltitude)
+    if (currAltitude > lastAltitude)
     {
-      lastAltitude = currAltitude;
-      measures = 15;
+      measures = 2;
     }
     else
     {
@@ -217,14 +226,14 @@ void loop()
       }
       else
       {
-        if (prevAltitude != currAltitude)
+        if (lastAltitude != currAltitude)
         {
           measures -= 1;
         }
       }
     }
+    lastAltitude = currAltitude;
   }
-
 
   // Deploy Parachute / Rescue secuence
   if (status == STATUS_APOGEE)
