@@ -22,6 +22,14 @@ void statusMonitor() {
       digitalWrite(greenLed, HIGH);
       //playNeverGonnaGiveYouUp();
     }
+    if (status == STATUS_EMERGENCY_DEPLOY)
+    {
+      digitalWrite(redLed, HIGH);
+      digitalWrite(blueLed, HIGH);
+      digitalWrite(greenLed, HIGH);
+      //playNeverGonnaGiveYouUp();
+    }
+    
     // Error codes ar coded 10 to 19
     if (status < 20) {
       // 1x Errors
@@ -37,7 +45,9 @@ void statusMonitor() {
         digitalWrite(blueLed, HIGH);
       }
       if (status == 12 ) {
-        digitalWrite(redLed, HIGH);
+
+        // this is not used when MPU not present
+        digitalWrite(LED_BUILTIN, HIGH);
       }
       tone(buzzer, 880);
     }
@@ -48,6 +58,7 @@ void statusMonitor() {
     digitalWrite(greenLed, LOW);
     digitalWrite(blueLed, LOW);
     digitalWrite(redLed, LOW);
+    digitalWrite(LED_BUILTIN, LOW);
     noTone(buzzer);
   }
 } 

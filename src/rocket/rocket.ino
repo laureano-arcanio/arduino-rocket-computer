@@ -21,19 +21,18 @@
 #include <SPI.h>
 #include <SD.h>
 #include <Adafruit_BMP085.h>
-
+#include <MPU6050.h>
 #include <Servo.h>
-#include <SimpleTimer.h>
 
-// Modules
-SimpleTimer timer;
 Servo servo;
+MPU6050 mpu;
 Adafruit_BMP085 bmp;
-int16_t ax, ay, az;
+int ax, ay, az, gx, gy, gz;
+
 File root;
 
 boolean allOn = true;
-String filename = "LOGS_1.txt";
+String filename;
 
 // Ground level Presssure 
 float P0;
@@ -43,11 +42,17 @@ float rawAltitude = 0;
 float initialAltitude = 0;
 float lastAltitude = 0;
 
+unsigned long millisAtLiftoff = 0;
+unsigned long millisFromLastBlink = 0;
+boolean  apogeeHasFired = false;
+
 // Status variable
 const unsigned int STATUS_READY = 20;
 const unsigned int STATUS_LIFTOFF = 40;
 const unsigned int STATUS_APOGEE = 60;
+const unsigned int STATUS_EMERGENCY_DEPLOY = 70;
 const unsigned int STATUS_LANDED = 80;
+
 
 //
 const unsigned int SECURITY_DEPLOYMENT_TIME = 15000;
@@ -69,11 +74,11 @@ boolean err = false; //Error check
 unsigned int measures = 2;
 
 // Pin Out
-const int redLed = 9;
-const int greenLed = 8;
-const int blueLed = 7;
-const int pinApogee = A0;
-const int buzzer = 6;
+const unsigned int redLed = 9;
+const unsigned int greenLed = 8;
+const unsigned int blueLed = 7;
+const int unsigned pinApogee = A0;
+const int unsigned buzzer = 6;
 
 //*********Kalman filter Variables*****************
 float f_1 = 1.00000;
@@ -110,13 +115,17 @@ void setup()
   pinMode(greenLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
   pinMode(buzzer, OUTPUT);
+
+  pinMode(LED_BUILTIN, OUTPUT);
   // Led / Buzzer test sequence
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(500);
   digitalWrite(redLed, HIGH);
-  delay(1000);
+  delay(500);
   digitalWrite(greenLed, HIGH);
-  delay(1000);
+  delay(500);
   digitalWrite(blueLed, HIGH);
-  delay(1000);
+  delay(500);
   digitalWrite(redLed, LOW);
   digitalWrite(blueLed, LOW);
   digitalWrite(greenLed, LOW);
@@ -145,15 +154,6 @@ void setup()
 
   //Initialise the Pyro & buzzer pins)
   pinMode(pinApogee, OUTPUT);
-  //pinMode(buzzer, OUTPUT);
-
-  //Make sure that the output are turned off
-  //digitalWrite(buzzer, LOW);
-
-
-  // Status timers
-  timer.setInterval(500, statusMonitor);
-
   KalmanInit();
   float pressoureAccum = 0;
   for (int i = 0; i < 10; i++) {
@@ -162,7 +162,6 @@ void setup()
   }
 
   P0 = pressoureAccum / 10;
-
 
   // initialise the Kalman filter
   for (int i = 0; i < 50; i++) {
@@ -177,7 +176,8 @@ void setup()
     delay(50);
   }
 
-  initialAltitude = (sum / 10.0);
+
+  initialAltitude = int(sum / 10.0);
   //Serial.println("Initial P");
   //Serial.println(P0);
   //Serial.println("Initial Altitude");
@@ -191,12 +191,16 @@ void setup()
     servo.attach(pinApogee);
     servo.write(25);
   }
+  millisFromLastBlink = millis();
 }
 
 void loop()
 { 
-  timer.run();
-
+  if (millis() - millisFromLastBlink >= 500) {
+    statusMonitor();
+    millisFromLastBlink = millis();
+  } 
+  
   if (status < STATUS_READY || status == STATUS_LANDED)
   {
     return;
@@ -209,6 +213,7 @@ void loop()
   if ((currAltitude > initialAltitude + 1) && status == STATUS_READY)
   {
     status = STATUS_LIFTOFF;
+    millisAtLiftoff = millis();
   }
 
   // //detect Apogee
@@ -241,21 +246,45 @@ void loop()
     // Eject nose cone with servo
     deployParachute();
   }
-
-  // Make sure to deploy parachute in case all fails
-  if (status == STATUS_LIFTOFF and millis() >= SECURITY_DEPLOYMENT_TIME)
-  {
-    deployParachute();
-  }
-
+  
   // Detect Landing
-  if (status == STATUS_APOGEE)
+  if (status == STATUS_APOGEE || status == STATUS_EMERGENCY_DEPLOY)
   {
     if (abs(currAltitude - initialAltitude) < 2)
     {
       status = STATUS_LANDED;
     }
   }
+
+  // Make sure to deploy parachute in case all fails
+  if (status == STATUS_LIFTOFF and millisAtLiftoff > 0 and (millis() - millisAtLiftoff) >= SECURITY_DEPLOYMENT_TIME)
+  {
+    deployParachute();
+    status = STATUS_EMERGENCY_DEPLOY;
+  }
+
+//    timer.run();
+//    mpu.getAcceleration(&ax, &ay, &az);
+//    mpu.getRotation(&gx, &gy, &gz);
+//    // CSV format:
+//    // Status , Millis from init, Initial Altitude, Current Altitude (by kalman), Raw Altitude measurement, Acc X, Acc Y, Acc Z, Gyro X, Gyro Y, Giro Z
+//    String logLine = String(millis()) + ", " + String(status) + ", " + String(initialAltitude) + ", " + String(currAltitude) + ", " + String(rawAltitude) + ", " +  String(ax / 2048) + ", " + String(ay / 2048) + ", " + String(az / 2048);
+//    //+ ", " +  String(gx) + ", " + String(gy) + ", " + String(gz)
+//
+//    Serial.print(millis()); Serial.print("\t");
+//    Serial.print(status); Serial.print("\t");
+//    Serial.print(initialAltitude); Serial.print("\t");
+//    Serial.print(currAltitude); Serial.print("\t");
+//    Serial.print(rawAltitude); Serial.print("\t");
+//    Serial.print(ax / 2048); Serial.print("\t");
+//    Serial.print(ay / 2048); Serial.print("\t");
+//    Serial.print(az / 2048); Serial.print("\t");
+//    Serial.print(gx); Serial.print("\t");
+//    Serial.print(gy); Serial.print("\t");
+//    Serial.print(gz); Serial.print("\t");
+//    Serial.print("\n");
+//
+//    //return;
 
   if (status >= STATUS_LIFTOFF and status < STATUS_LANDED)
   {
@@ -268,5 +297,9 @@ void deployParachute()
 {
   // 25 deg close
   // 0 deg Open
-  servo.write(0);
+  if (apogeeHasFired == false) {
+    servo.write(0);
+    apogeeHasFired = true;
+  }
+  
 }
