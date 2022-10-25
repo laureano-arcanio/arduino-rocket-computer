@@ -16,19 +16,19 @@ def main():
     deltaLiftOff = 1
     liftOf = False
 
-    measures = 3
+    measures = 2
     xApogee = 0
 
     lastAltitude = 0
 
-    with open('log.txt', newline='') as csvfile:
+    with open('log_fail.csv', newline='') as csvfile:
         spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
 
 
         for row in spamreader:
-            currAltitude = int (row[0]) 
+            currAltitude = int (row[1]) 
             if currAltitude > lastAltitude:
-                measures = 3
+                measures = 2
             else:
                 if measures == 0:
                     print("Apogee at: " + str(currAltitude))
