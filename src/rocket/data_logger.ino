@@ -1,6 +1,7 @@
+
 boolean hasHeaders = false;
  
- void dataLogger() {
+void dataLogger() {
   mpu.getAcceleration(&ax, &ay, &az);
   mpu.getRotation(&gx, &gy, &gz);
   // CSV format:
@@ -29,4 +30,3 @@ boolean hasHeaders = false;
     dataFile.close();
   }
 }
-

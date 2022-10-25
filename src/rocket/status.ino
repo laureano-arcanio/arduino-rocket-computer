@@ -25,6 +25,9 @@ void statusMonitor() {
     if (status == STATUS_EMERGENCY_DEPLOY)
     {
       digitalWrite(redLed, HIGH);
+      digitalWrite(blueLed, HIGH);
+      digitalWrite(greenLed, HIGH);
+      //playNeverGonnaGiveYouUp();
     }
     
     // Error codes ar coded 10 to 19
@@ -42,6 +45,7 @@ void statusMonitor() {
         digitalWrite(blueLed, HIGH);
       }
       if (status == 12 ) {
+
         // this is not used when MPU not present
         digitalWrite(LED_BUILTIN, HIGH);
       }

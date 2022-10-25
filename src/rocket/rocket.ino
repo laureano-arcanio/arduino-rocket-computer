@@ -28,6 +28,7 @@ Servo servo;
 MPU6050 mpu;
 Adafruit_BMP085 bmp;
 int ax, ay, az, gx, gy, gz;
+
 File root;
 
 boolean allOn = true;
@@ -40,6 +41,7 @@ float rawAltitude = 0;
 
 float initialAltitude = 0;
 float lastAltitude = 0;
+
 unsigned long millisAtLiftoff = 0;
 unsigned long millisFromLastBlink = 0;
 boolean  apogeeHasFired = false;
@@ -53,7 +55,7 @@ const unsigned int STATUS_LANDED = 80;
 
 
 //
-const unsigned int SECURITY_DEPLOYMENT_TIME = 10000;
+const unsigned int SECURITY_DEPLOYMENT_TIME = 15000;
 
 unsigned int status = 20;
   // 1x Errors
@@ -113,6 +115,7 @@ void setup()
   pinMode(greenLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
   pinMode(buzzer, OUTPUT);
+
   pinMode(LED_BUILTIN, OUTPUT);
   // Led / Buzzer test sequence
   digitalWrite(LED_BUILTIN, HIGH);
@@ -149,16 +152,8 @@ void setup()
     status = 11;
   }
 
-  mpu.initialize(); //Accel/gyro Sensor Initialisation
-  if (!mpu.testConnection())
-  {
-    //Serial.println("MPU Failed!");
-    status = 12;
-  }
-
   //Initialise the Pyro & buzzer pins)
   pinMode(pinApogee, OUTPUT);
-
   KalmanInit();
   float pressoureAccum = 0;
   for (int i = 0; i < 10; i++) {
@@ -180,6 +175,7 @@ void setup()
     sum += KalmanCalc(bmp.readAltitude(P0));;
     delay(50);
   }
+
 
   initialAltitude = int(sum / 10.0);
   //Serial.println("Initial P");
