@@ -68,8 +68,6 @@ unsigned int status = 20;
   // 60 = Apogee
   // 80 = Landed 
 
-boolean err = false; //Error check
-
 // consecutive measures < apogee to run before apogee confirmation
 unsigned int measures = 2;
 
@@ -119,13 +117,13 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   // Led / Buzzer test sequence
   digitalWrite(LED_BUILTIN, HIGH);
-  delay(500);
+  delay(300);
   digitalWrite(redLed, HIGH);
-  delay(500);
+  delay(300);
   digitalWrite(greenLed, HIGH);
   delay(500);
   digitalWrite(blueLed, HIGH);
-  delay(500);
+  delay(300);
   digitalWrite(redLed, LOW);
   digitalWrite(blueLed, LOW);
   digitalWrite(greenLed, LOW);
@@ -176,7 +174,6 @@ void setup()
     delay(50);
   }
 
-
   initialAltitude = int(sum / 10.0);
   //Serial.println("Initial P");
   //Serial.println(P0);
@@ -189,7 +186,17 @@ void setup()
     // Initialize servo after all delays
     // Servos won't play well when using delay
     servo.attach(pinApogee);
+    // All led high servo open for parachute insertion
+    digitalWrite(redLed, HIGH);
+    digitalWrite(blueLed, HIGH);
+    digitalWrite(greenLed, HIGH);
+    servo.write(0);
+    delay(5000);
     servo.write(25);
+    // Leds off after servo lock
+    digitalWrite(redLed, LOW);
+    digitalWrite(blueLed, LOW);
+    digitalWrite(greenLed, LOW);
   }
   millisFromLastBlink = millis();
 }
@@ -263,35 +270,11 @@ void loop()
     status = STATUS_EMERGENCY_DEPLOY;
   }
 
-//    timer.run();
-//    mpu.getAcceleration(&ax, &ay, &az);
-//    mpu.getRotation(&gx, &gy, &gz);
-//    // CSV format:
-//    // Status , Millis from init, Initial Altitude, Current Altitude (by kalman), Raw Altitude measurement, Acc X, Acc Y, Acc Z, Gyro X, Gyro Y, Giro Z
-//    String logLine = String(millis()) + ", " + String(status) + ", " + String(initialAltitude) + ", " + String(currAltitude) + ", " + String(rawAltitude) + ", " +  String(ax / 2048) + ", " + String(ay / 2048) + ", " + String(az / 2048);
-//    //+ ", " +  String(gx) + ", " + String(gy) + ", " + String(gz)
-//
-//    Serial.print(millis()); Serial.print("\t");
-//    Serial.print(status); Serial.print("\t");
-//    Serial.print(initialAltitude); Serial.print("\t");
-//    Serial.print(currAltitude); Serial.print("\t");
-//    Serial.print(rawAltitude); Serial.print("\t");
-//    Serial.print(ax / 2048); Serial.print("\t");
-//    Serial.print(ay / 2048); Serial.print("\t");
-//    Serial.print(az / 2048); Serial.print("\t");
-//    Serial.print(gx); Serial.print("\t");
-//    Serial.print(gy); Serial.print("\t");
-//    Serial.print(gz); Serial.print("\t");
-//    Serial.print("\n");
-//
-//    //return;
-
   if (status >= STATUS_LIFTOFF and status < STATUS_LANDED)
   {
     dataLogger();
   }
 }
-
 
 void deployParachute()
 {

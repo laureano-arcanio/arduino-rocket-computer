@@ -20,13 +20,11 @@ void statusMonitor() {
       digitalWrite(redLed, HIGH);
       digitalWrite(blueLed, HIGH);
       digitalWrite(greenLed, HIGH);
-      //playNeverGonnaGiveYouUp();
+      tone(buzzer, 880);
     }
     if (status == STATUS_EMERGENCY_DEPLOY)
     {
       digitalWrite(redLed, HIGH);
-      digitalWrite(blueLed, HIGH);
-      digitalWrite(greenLed, HIGH);
       //playNeverGonnaGiveYouUp();
     }
     
