@@ -7,6 +7,9 @@ An Arduino based hardware and software for model rockets recovery and logging sy
 Altitude is measured using a Presion BMP280 Sensor. Data is passed through a Kalman filter and then apogee is detected.
 Logs are stored in a SD card as CSV format.
 
+## First Rocket Flight
+Our first flight deployed parachute before apogee, due to an issue with flight computer executing Emergency mode right after liftoff. Anyways, we recovered the entire rocket without any damage.
+[First Flight](https://www.youtube.com/watch?v=o5odCazfV4E)
 
 ## Electronics
 ![Circuito](/schematics/protoboard.png)
