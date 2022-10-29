@@ -10,4 +10,7 @@ Logs are stored in a SD card as CSV format.
 
 ## Electronics
 ![Circuito](/schematics/protoboard.png)
-![Electronics Build v1](https://github.com/laureano-arcanio/arduino-rocket-computer/blob/main/images/Electronics_v1.jpeg)
+![Full Assembly](https://github.com/laureano-arcanio/arduino-rocket-computer/blob/main/images/Full_assembly_v2.jpeg)
+![Full Assembly chute deployed](https://github.com/laureano-arcanio/arduino-rocket-computer/blob/main/images/Full_chute_deploy_v2.jpeg)
+![Electronics Bay open](https://github.com/laureano-arcanio/arduino-rocket-computer/blob/main/images/Electronics_bay_v2.jpeg)
+![Electronics Build](https://github.com/laureano-arcanio/arduino-rocket-computer/blob/main/images/Electronics_v1.jpeg)
