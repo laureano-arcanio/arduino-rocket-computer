@@ -16,7 +16,7 @@
     Boris du Reau / https://github.com/bdureau
 
 */
-
+#include <EEPROM.h>
 #include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
@@ -24,7 +24,7 @@
 #include <MPU6050.h>
 #include <Servo.h>
 
-// define SERIAL_DEBUG true
+#define SERIAL_DEBUG true
 
 Servo servo;
 MPU6050 mpu;
@@ -48,6 +48,10 @@ float lastAltitude = 0;
 unsigned long millisAtLiftoff = 0;
 unsigned long millisFromLastBlink = 0;
 boolean apogeeHasFired = false;
+
+// Eeprom variables
+unsigned short eepromAvalableBytes = 1024;
+
 
 // Status variable
 const unsigned int STATUS_READY = 20;
@@ -155,7 +159,7 @@ String getFileName(File dir, int numTabs)
   return "LOGS_" + String(fileCount) + ".txt";
 }
 
-void dataLogger()
+void sdDataLogger()
 {
   if (useMPUData == true)
   {
@@ -202,6 +206,61 @@ void dataLogger()
   }
 }
 
+void writeIntIntoEEPROM(int address, int number)
+{ 
+  EEPROM.update(address, number >> 8);
+  EEPROM.update(address + 1, number & 0xFF);
+}
+
+int readIntFromEEPROM(int address)
+{
+  byte byte1 = EEPROM.read(address);
+  byte byte2 = EEPROM.read(address + 1);
+  return (byte1 << 8) + byte2;
+}
+
+
+void eepromDataLogger() {
+  // Log flight data using 5 bytes per row
+  // Timestamp(int 2 bytes) - Status (char 1 byte) - Altitude (int 2 bytes)
+
+  if (eepromAvalableBytes >= 5) {
+    unsigned short currentEepromAddress = 1024 - eepromAvalableBytes;
+    writeIntIntoEEPROM(currentEepromAddress, millis() / 10); // Addr n+0, n+1)
+    // const unsigned int STATUS_READY = 20;
+    // const unsigned int STATUS_LIFTOFF = 40;
+    // const unsigned int STATUS_APOGEE = 60;
+    // const unsigned int STATUS_EMERGENCY_DEPLOY = 70;
+    // const unsigned int STATUS_LANDED = 80;
+    if (status == 40) {
+      EEPROM.update(currentEepromAddress + 2, 'L'); // Addr n+2)
+    } else if (status == 60) {
+      EEPROM.update(currentEepromAddress + 2, 'A'); // Addr n+2)
+    } else if (status == 70) {
+      EEPROM.update(currentEepromAddress + 2, 'E'); // Addr n+2)
+    } else {
+      EEPROM.update(currentEepromAddress + 2, 'X'); // Addr n+2)
+    }
+    
+    writeIntIntoEEPROM(currentEepromAddress + 3, (int) rawAltitude ); // Addr n+3, n+4)
+    eepromAvalableBytes -= 5;
+  }
+}
+#if SERIAL_DEBUG
+void eepromDataReader() {
+  for (int i = 0; i<= 1024; i+=5) {
+    Serial.print(readIntFromEEPROM(i)); // timestamp 2 bytes
+    Serial.print("\t");
+    Serial.print((char) EEPROM.read(i+2)); // Status 1 byte
+    Serial.print("\t");
+    Serial.print(EEPROM.read(i+2)); // Status 1 byte
+    Serial.print("\t");
+    Serial.print(readIntFromEEPROM(i+3)); // Altitude 2 bytes
+    Serial.println();
+  }
+}
+#endif
+
 void lockParachuteSequence()
 {
   // All led high servo open for parachute insertion
@@ -233,6 +292,10 @@ void setup()
 {
 #if SERIAL_DEBUG
   Serial.begin(9600);
+#endif
+
+#if SERIAL_DEBUG
+ eepromDataReader();
 #endif
 
   Wire.begin();
@@ -357,7 +420,7 @@ void loop()
 
 #if SERIAL_DEBUG
   Serial.println("Raw Altitude " + String(rawAltitude));
-  Serial.println("Kalman Altitude " + String(rawTemp));
+  Serial.println("Kalman Altitude " + String(currAltitude));
   Serial.println("Previous Altitude: " + String(lastAltitude));
   Serial.println("Raw Temp: " + String(rawTemp));
   Serial.println("Status: " + String(status));
@@ -417,8 +480,10 @@ void loop()
     status = STATUS_EMERGENCY_DEPLOY;
   }
 
-  // if (status >= STATUS_LIFTOFF and status < STATUS_LANDED)
-  // {
-  dataLogger();
-  // }
+
+  sdDataLogger();
+  if (status >= STATUS_LIFTOFF and status < STATUS_LANDED)
+  {
+    eepromDataLogger();
+  }
 }
