@@ -19,12 +19,12 @@ def main():
 
     lastAltitude = 0
 
-    with open('log_fail.csv', newline='') as csvfile:
-        spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+    with open('log_eeprom.csv', newline='') as csvfile:
+        spamreader = csv.reader(csvfile, delimiter='\t', quotechar='|')
 
 
         for row in spamreader:
-            currAltitude = int (row[1]) 
+            currAltitude = int (row[2]) 
             if currAltitude > lastAltitude:
                 measures = 2
             else:
