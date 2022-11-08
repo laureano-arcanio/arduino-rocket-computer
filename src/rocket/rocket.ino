@@ -47,7 +47,9 @@ float lastAltitude = 0;
 
 unsigned long millisAtLiftoff = 0;
 unsigned long millisFromLastBlink = 0;
-boolean apogeeHasFired = false;
+unsigned long millisAtCurrentLoop = 0;
+unsigned long millisAtLoopStart = 0;
+bool apogeeHasFired = false;
 
 // Eeprom variables
 unsigned short eepromAvalableBytes = 1024;
@@ -177,7 +179,7 @@ void sdDataLogger()
       dataFile.println("Ms\tCode\tA0\tCA\tMA\tT\tAX\tAY\tAZ\tGX\tGY\tGZ");
       hasHeaders = true;
     }
-    dataFile.print(millis());
+    dataFile.print(millisAtCurrentLoop);
     dataFile.print("\t");
     dataFile.print(status);
     dataFile.print("\t");
@@ -226,19 +228,14 @@ void eepromDataLogger() {
 
   if (eepromAvalableBytes >= 5) {
     unsigned short currentEepromAddress = 1024 - eepromAvalableBytes;
-    writeIntIntoEEPROM(currentEepromAddress, millis() / 10); // Addr n+0, n+1)
-    // const unsigned int STATUS_READY = 20;
-    // const unsigned int STATUS_LIFTOFF = 40;
-    // const unsigned int STATUS_APOGEE = 60;
-    // const unsigned int STATUS_EMERGENCY_DEPLOY = 70;
-    // const unsigned int STATUS_LANDED = 80;
-    if (status == 40) {
+    writeIntIntoEEPROM(currentEepromAddress, millisAtCurrentLoop / 10); // Addr n+0, n+1)
+    if (status == 40) { // STATUS_LIFTOFF
       EEPROM.update(currentEepromAddress + 2, 'L'); // Addr n+2)
-    } else if (status == 60) {
+    } else if (status == 60) { // STATUS_APOGEE
       EEPROM.update(currentEepromAddress + 2, 'A'); // Addr n+2)
-    } else if (status == 70) {
+    } else if (status == 70) { // STATUS_EMERGENCY_DEPLOY
       EEPROM.update(currentEepromAddress + 2, 'E'); // Addr n+2)
-    } else {
+    } else { // ANY OTHER 
       EEPROM.update(currentEepromAddress + 2, 'X'); // Addr n+2)
     }
     
@@ -252,8 +249,6 @@ void eepromDataReader() {
     Serial.print(readIntFromEEPROM(i)); // timestamp 2 bytes
     Serial.print("\t");
     Serial.print((char) EEPROM.read(i+2)); // Status 1 byte
-    Serial.print("\t");
-    Serial.print(EEPROM.read(i+2)); // Status 1 byte
     Serial.print("\t");
     Serial.print(readIntFromEEPROM(i+3)); // Altitude 2 bytes
     Serial.println();
@@ -399,15 +394,21 @@ void setup()
   {
     lockParachuteSequence();
   }
-  millisFromLastBlink = millis();
+  millisFromLastBlink = millisAtCurrentLoop;
 }
 
 void loop()
 {
-  if (millis() - millisFromLastBlink >= 500)
+  if (millisAtLoopStart == 0) {
+    millisAtLoopStart = millis();
+  } else {
+    millisAtCurrentLoop = millis() - millisAtLoopStart;
+  }
+
+  if (millisAtCurrentLoop - millisFromLastBlink >= 500)
   {
     statusMonitor();
-    millisFromLastBlink = millis();
+    millisFromLastBlink = millisAtCurrentLoop;
   }
 
   if (status < STATUS_READY || status == STATUS_LANDED)
@@ -419,6 +420,7 @@ void loop()
   currAltitude = KalmanCalc(rawAltitude) - initialAltitude;
 
 #if SERIAL_DEBUG
+  Serial.println("Runtime " + String(millisAtCurrentLoop));
   Serial.println("Raw Altitude " + String(rawAltitude));
   Serial.println("Kalman Altitude " + String(currAltitude));
   Serial.println("Previous Altitude: " + String(lastAltitude));
@@ -430,7 +432,7 @@ void loop()
   if ((currAltitude > initialAltitude + 1) && status == STATUS_READY)
   {
     status = STATUS_LIFTOFF;
-    millisAtLiftoff = millis();
+    millisAtLiftoff = millisAtCurrentLoop;
   }
 
   // Apogee detection
@@ -449,11 +451,11 @@ void loop()
       else
       {
         if (lastAltitude != currAltitude)
-        {
+        { 
           measures -= 1;
         }
       }
-    }
+    } 
     lastAltitude = currAltitude;
   }
 
@@ -474,12 +476,11 @@ void loop()
   }
 
   // Emergency parachute deployment
-  if (status == STATUS_LIFTOFF and millisAtLiftoff > 0 and (millis() - millisAtLiftoff) >= SECURITY_DEPLOYMENT_TIME)
+  if (status == STATUS_LIFTOFF and millisAtLiftoff > 0 and (millisAtCurrentLoop - millisAtLiftoff) >= SECURITY_DEPLOYMENT_TIME)
   {
     deployParachute();
     status = STATUS_EMERGENCY_DEPLOY;
   }
-
 
   sdDataLogger();
   if (status >= STATUS_LIFTOFF and status < STATUS_LANDED)
