@@ -51,9 +51,14 @@ unsigned long millisAtCurrentLoop = 0;
 unsigned long millisAtLoopStart = 0;
 bool apogeeHasFired = false;
 
+// Time interval to check for landed condition
+const unsigned short LANDED_CHECK_INTERVAL = 1000;
+unsigned short millisFromLastLandedCheck = 0;
+unsigned short landedCheckCounts = 2;
+
+
 // Eeprom variables
 unsigned short eepromAvalableBytes = 1024;
-
 
 // Status variable
 const unsigned int STATUS_READY = 20;
@@ -467,11 +472,34 @@ void loop()
   }
 
   // Detect Landing
-  if (status == STATUS_APOGEE || status == STATUS_EMERGENCY_DEPLOY)
+  // if (status == STATUS_APOGEE || status == STATUS_EMERGENCY_DEPLOY)
+  // {
+  //   if (abs(currAltitude - initialAltitude) < 2)
+  //   {
+  //     status = STATUS_LANDED;
+  //   }
+  // }
+
+  if (status > STATUS_LIFTOFF && status < STATUS_LANDED)
   {
-    if (abs(currAltitude - initialAltitude) < 2)
-    {
-      status = STATUS_LANDED;
+    // const unsigned short LANDED_CHECK_INTERVAL = 1000; // milliseconds 
+    // unsigned short millisFromLastLandedCheck = 0;
+    // unsigned short landedCheckCounts = 2;
+
+    if (millisAtCurrentLoop - millisFromLastLandedCheck > LANDED_CHECK_INTERVAL) { 
+      millisFromLastLandedCheck = millisAtCurrentLoop;
+
+      if (landedCheckCounts == 0 || status == STATUS_EMERGENCY_DEPLOY) {
+        status = STATUS_LANDED;
+      } else {
+        if (currAltitude == lastAltitude)
+        {
+          landedCheckCounts -= 1;
+        } else {
+          landedCheckCounts = 2;
+        }
+
+      }
     }
   }
 
