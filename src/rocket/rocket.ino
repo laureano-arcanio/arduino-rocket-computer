@@ -37,13 +37,13 @@ boolean useMPUData = true;
 boolean allOn = true;
 String filename;
 float P0;
-int currAltitude;
+float initialAltitude = 0;
+int previousLoopAltitude = 0;
+int currentLoopAltitude = 0;
 float rawAltitude = 0;
 float rawTemp = 0;
 boolean hasHeaders = false;
 
-float initialAltitude = 0;
-float lastAltitude = 0;
 
 unsigned long millisAtLiftoff = 0;
 unsigned long millisFromLastBlink = 0;
@@ -53,20 +53,22 @@ bool apogeeHasFired = false;
 
 // Time interval to check for landed condition
 const unsigned short LANDED_CHECK_INTERVAL = 1000;
+const unsigned short LANDED_THRESHOLD = 2;
 unsigned short millisFromLastLandedCheck = 0;
-unsigned short landedCheckCounts = 2;
+
+unsigned short landedCheckCounts = LANDED_THRESHOLD;
 
 
 // Eeprom variables
 unsigned short eepromAvalableBytes = 1024;
 
 // Status variable
-const unsigned int STATUS_READY = 20;
-const unsigned int STATUS_LIFTOFF = 40;
-const unsigned int STATUS_APOGEE = 60;
-const unsigned int STATUS_EMERGENCY_DEPLOY = 70;
-const unsigned int STATUS_LANDED = 80;
-unsigned int status = STATUS_READY;
+const unsigned short STATUS_READY = 20;
+const unsigned short STATUS_LIFTOFF = 40;
+const unsigned short STATUS_APOGEE = 60;
+const unsigned short STATUS_EMERGENCY_DEPLOY = 70;
+const unsigned short STATUS_LANDED = 80;
+unsigned short status = STATUS_READY;
 // 1x Errors
 // 10 = SD Error
 // 11 = BMP Error
@@ -81,7 +83,9 @@ unsigned int status = STATUS_READY;
 const unsigned int SECURITY_DEPLOYMENT_TIME = 15000;
 
 // consecutive measures < apogee to run before apogee confirmation
-unsigned int measures = 2;
+
+const unsigned short APOGEE_THRESHOLD = 2;
+unsigned int consecutiveAltitudeDrop = APOGEE_THRESHOLD;
 
 // Pin Out
 const unsigned int redLed = 9;
@@ -190,7 +194,7 @@ void sdDataLogger()
     dataFile.print("\t");
     dataFile.print(initialAltitude);
     dataFile.print("\t");
-    dataFile.print(currAltitude);
+    dataFile.print(currentLoopAltitude);
     dataFile.print("\t");
     dataFile.print(rawAltitude);
     dataFile.print("\t");
@@ -244,7 +248,7 @@ void eepromDataLogger() {
       EEPROM.update(currentEepromAddress + 2, 'X'); // Addr n+2)
     }
     
-    writeIntIntoEEPROM(currentEepromAddress + 3, (int) rawAltitude ); // Addr n+3, n+4)
+    writeIntIntoEEPROM(currentEepromAddress + 3, currentLoopAltitude ); // Addr n+3, n+4)
     eepromAvalableBytes -= 5;
   }
 }
@@ -404,37 +408,40 @@ void setup()
 
 void loop()
 {
+  // Unified time for the entire loop **millisAtCurrentLoop**
   if (millisAtLoopStart == 0) {
     millisAtLoopStart = millis();
   } else {
     millisAtCurrentLoop = millis() - millisAtLoopStart;
   }
 
+  // Led status blink
   if (millisAtCurrentLoop - millisFromLastBlink >= 500)
   {
     statusMonitor();
     millisFromLastBlink = millisAtCurrentLoop;
   }
 
+  // Skip all the above if its not ready or have landed
   if (status < STATUS_READY || status == STATUS_LANDED)
   {
     return;
   }
   rawTemp = bmp.readTemperature();
   rawAltitude = bmp.readAltitude(P0);
-  currAltitude = KalmanCalc(rawAltitude) - initialAltitude;
+  currentLoopAltitude = KalmanCalc(rawAltitude) - initialAltitude;
 
 #if SERIAL_DEBUG
   Serial.println("Runtime " + String(millisAtCurrentLoop));
   Serial.println("Raw Altitude " + String(rawAltitude));
-  Serial.println("Kalman Altitude " + String(currAltitude));
-  Serial.println("Previous Altitude: " + String(lastAltitude));
+  Serial.println("Kalman Altitude " + String(currentLoopAltitude));
+  Serial.println("Previous Altitude: " + String(previousLoopAltitude));
   Serial.println("Raw Temp: " + String(rawTemp));
   Serial.println("Status: " + String(status));
 #endif
 
   // Liftoff detection
-  if ((currAltitude > initialAltitude + 1) && status == STATUS_READY)
+  if ((currentLoopAltitude > initialAltitude + 1) && status == STATUS_READY)
   {
     status = STATUS_LIFTOFF;
     millisAtLiftoff = millisAtCurrentLoop;
@@ -443,25 +450,25 @@ void loop()
   // Apogee detection
   if (status == STATUS_LIFTOFF)
   {
-    if (currAltitude > lastAltitude)
+    if (currentLoopAltitude > previousLoopAltitude)
     {
-      measures = 2;
+      consecutiveAltitudeDrop = APOGEE_THRESHOLD;
     }
     else
     {
-      if (measures == 0)
+      if (consecutiveAltitudeDrop == 0)
       {
         status = STATUS_APOGEE;
       }
       else
       {
-        if (lastAltitude != currAltitude)
+        if (previousLoopAltitude != currentLoopAltitude)
         { 
-          measures -= 1;
+          consecutiveAltitudeDrop -= 1;
         }
       }
     } 
-    lastAltitude = currAltitude;
+    previousLoopAltitude = currentLoopAltitude;
   }
 
   // Deploy Parachute / Rescue secuence
@@ -472,31 +479,24 @@ void loop()
   }
 
   // Detect Landing
-  // if (status == STATUS_APOGEE || status == STATUS_EMERGENCY_DEPLOY)
-  // {
-  //   if (abs(currAltitude - initialAltitude) < 2)
-  //   {
-  //     status = STATUS_LANDED;
-  //   }
-  // }
-
-  if (status > STATUS_LIFTOFF && status < STATUS_LANDED)
+  // Check altitude to be repeating LANDED_THRESHOLD times on every LANDED_CHECK_INTERVAL milliseconds
+  if (status >= STATUS_LIFTOFF && status < STATUS_LANDED)
   {
-    // const unsigned short LANDED_CHECK_INTERVAL = 1000; // milliseconds 
-    // unsigned short millisFromLastLandedCheck = 0;
-    // unsigned short landedCheckCounts = 2;
-
+    // s
+    // if (millisFromLastLandedCheck == 0) {
+    //   millisFromLastLandedCheck = millisAtCurrentLoop;
+    // }
     if (millisAtCurrentLoop - millisFromLastLandedCheck > LANDED_CHECK_INTERVAL) { 
       millisFromLastLandedCheck = millisAtCurrentLoop;
 
       if (landedCheckCounts == 0 || status == STATUS_EMERGENCY_DEPLOY) {
         status = STATUS_LANDED;
       } else {
-        if (currAltitude == lastAltitude)
+        if (currentLoopAltitude == previousLoopAltitude)
         {
           landedCheckCounts -= 1;
         } else {
-          landedCheckCounts = 2;
+          landedCheckCounts = LANDED_THRESHOLD;
         }
 
       }
@@ -510,9 +510,12 @@ void loop()
     status = STATUS_EMERGENCY_DEPLOY;
   }
 
+  // SD storage on whenever ready
+  // code as is will only write 1 last log when landed
   sdDataLogger();
   if (status >= STATUS_LIFTOFF and status < STATUS_LANDED)
   {
+    // To prevent damaging eeprom, only store important flight data 
     eepromDataLogger();
   }
 }
