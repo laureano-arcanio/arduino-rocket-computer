@@ -484,7 +484,7 @@ void loop()
   {
     // s
     // if (millisFromLastLandedCheck == 0) {
-    //   millisFromLastLandedCheck = millisAtCurrentLoop;
+    //     millisFromLastLandedCheck = millisAtCurrentLoop;
     // }
     if (millisAtCurrentLoop - millisFromLastLandedCheck > LANDED_CHECK_INTERVAL) { 
       millisFromLastLandedCheck = millisAtCurrentLoop;
@@ -500,6 +500,14 @@ void loop()
         }
 
       }
+    }
+  }
+
+  if (status == STATUS_APOGEE || status == STATUS_EMERGENCY_DEPLOY)
+  {
+    if (abs(currentLoopAltitude - initialAltitude) < 5)
+    {
+      status = STATUS_LANDED;
     }
   }
 
