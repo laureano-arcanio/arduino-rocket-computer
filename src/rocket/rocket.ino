@@ -24,7 +24,7 @@
 #include <MPU6050.h>
 #include <Servo.h>
 
-#define SERIAL_DEBUG true
+// # define SERIAL_DEBUG true
 
 Servo servo;
 MPU6050 mpu;
@@ -62,7 +62,7 @@ unsigned short landedCheckCounts = LANDED_THRESHOLD;
 // Eeprom variables
 unsigned short eepromAvalableBytes = 1024;
 
-// Status variable
+// Status
 const unsigned short STATUS_READY = 20;
 const unsigned short STATUS_LIFTOFF = 40;
 const unsigned short STATUS_APOGEE = 60;
@@ -79,12 +79,14 @@ unsigned short status = STATUS_READY;
 // 60 = Apogee
 // 80 = Landed
 
+// Landed threshold
+const unsigned short LIFTOFF_THRESHOLD = 5;
+
 // Security deploy time
-const unsigned int SECURITY_DEPLOYMENT_TIME = 15000;
+const unsigned int SECURITY_DEPLOYMENT_TIME = 4500; // Total flight for the current motor aprox 6.5 seconds
 
 // consecutive measures < apogee to run before apogee confirmation
-
-const unsigned short APOGEE_THRESHOLD = 2;
+const unsigned short APOGEE_THRESHOLD = 3;
 unsigned int consecutiveAltitudeDrop = APOGEE_THRESHOLD;
 
 // Pin Out
@@ -427,6 +429,7 @@ void loop()
   {
     return;
   }
+  
   rawTemp = bmp.readTemperature();
   rawAltitude = bmp.readAltitude(P0);
   currentLoopAltitude = KalmanCalc(rawAltitude) - initialAltitude;
@@ -441,7 +444,7 @@ void loop()
 #endif
 
   // Liftoff detection
-  if ((currentLoopAltitude > initialAltitude + 1) && status == STATUS_READY)
+  if (status == STATUS_READY && (currentLoopAltitude > initialAltitude + LIFTOFF_THRESHOLD))
   {
     status = STATUS_LIFTOFF;
     millisAtLiftoff = millisAtCurrentLoop;
@@ -479,48 +482,31 @@ void loop()
   }
 
   // Detect Landing
-  // Check altitude to be repeating LANDED_THRESHOLD times on every LANDED_CHECK_INTERVAL milliseconds
-  if (status >= STATUS_LIFTOFF && status < STATUS_LANDED)
+  // Simplyfy landed check
+  // Just count 20 seconds after liftoff
+  // This needs better computing, but this simplyfies it for now
+  // [liftoff, ..]
+  if (status >= STATUS_LIFTOFF)
   {
-    // s
-    // if (millisFromLastLandedCheck == 0) {
-    //     millisFromLastLandedCheck = millisAtCurrentLoop;
-    // }
-    if (millisAtCurrentLoop - millisFromLastLandedCheck > LANDED_CHECK_INTERVAL) { 
-      millisFromLastLandedCheck = millisAtCurrentLoop;
-
-      if (landedCheckCounts == 0 || status == STATUS_EMERGENCY_DEPLOY) {
-        status = STATUS_LANDED;
-      } else {
-        if (currentLoopAltitude == previousLoopAltitude)
-        {
-          landedCheckCounts -= 1;
-        } else {
-          landedCheckCounts = LANDED_THRESHOLD;
-        }
-
-      }
-    }
-  }
-
-  if (status == STATUS_APOGEE || status == STATUS_EMERGENCY_DEPLOY)
-  {
-    if (abs(currentLoopAltitude - initialAltitude) < 5)
-    {
+    if (millisAtCurrentLoop - millisAtLiftoff > 20000) {
       status = STATUS_LANDED;
     }
   }
 
-  // Emergency parachute deployment
-  if (status == STATUS_LIFTOFF and millisAtLiftoff > 0 and (millisAtCurrentLoop - millisAtLiftoff) >= SECURITY_DEPLOYMENT_TIME)
+  // Emergency parachute deployment [liftoff, landed)
+  if (status >= STATUS_LIFTOFF && status < STATUS_LANDED)
   {
-    deployParachute();
-    status = STATUS_EMERGENCY_DEPLOY;
+    if ((millisAtCurrentLoop - millisAtLiftoff) >= SECURITY_DEPLOYMENT_TIME)
+    {
+      deployParachute();
+      status = STATUS_EMERGENCY_DEPLOY;
+    }
   }
 
   // SD storage on whenever ready
   // code as is will only write 1 last log when landed
   sdDataLogger();
+  // [liftoff, landed)
   if (status >= STATUS_LIFTOFF and status < STATUS_LANDED)
   {
     // To prevent damaging eeprom, only store important flight data 
