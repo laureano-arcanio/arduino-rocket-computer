@@ -11,8 +11,8 @@ Logs are stored in a SD card as CSV format.
 Our first flight deployed parachute before apogee, due to an issue with flight computer executing Emergency mode right after liftoff. Anyways, we recovered the entire rocket without any damage.
 [First Flight](https://www.youtube.com/watch?v=o5odCazfV4E)
 
-## Third Rocet Flight (commit 45)
-Our rocket flow perfectly, but parachute did not ejected. After landing, and some further investigation we figured out for some reason the computer switched to Liftoff status before liftoff (probably due to pression change, was a windy day). And due to launchpad conditions switched to landed after 3.5s. So the rocket flown with a computer in Landed status. We'll fix the liftoff condition to account for more meters (>5) and shorten EMERGENCY deploy time to fit this rocket motor. (4s)
+## Third Rocket Flight (commit 45)
+Our rocket flow perfectly, but parachute did not ejected. After landing, and some further investigation we figured out for some reason the computer switched to Liftoff status before liftoff (probably due to the pressure change, was a windy day). And due to launchpad conditions switched to landed after 3.5s. So the rocket flown with a computer in Landed status. We'll fix the liftoff condition to account for more meters (>5) and shorten EMERGENCY deploy time to fit this rocket motor. (4s)
 [Third Flight](https://www.youtube.com/watch?v=9i5LRDVh-5M)
 
 ## Electronics
