@@ -38,7 +38,7 @@ Our battery compleately died. We struggle with some bad wiring for a long time b
 **Logs:**
 We experienced several unknown issues, initially servo lock did not work. This overheated the servo and some wires burnt out. After several attemps, we manage to get computer to ready status, fired the rocket but engine failes at about 5-7 mts hight. Rocket recovered almost 100% safe except for a broken finn. None logs where stored, we figured out 180deg servos don't work well on edges. so we switched from 0 to 25 deg to 15 to 40.
 
-## Fifth Rocket Flight
+### Fifth Rocket Flight
 **Date:** Wednesday, November 9 2022 17hspm
 **Weather**: Sunny, Windy (10-15knots)
 **Rocket version:** v48
