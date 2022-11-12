@@ -1,0 +1,77 @@
+data:
+  config:
+    ambPressure: 101324.99674500001
+    burnoutThrustThres: 0.1
+    burnoutWebThres: 2.54e-05
+    mapDim: 750
+    maxMassFlux: 1406.469761
+    maxPressure: 10342500.000000002
+    minPortThroat: 2.0
+    timestep: 0.03
+  grains:
+  - properties:
+      coreDiameter: 0.01
+      diameter: 0.019
+      inhibitedEnds: Neither
+      length: 0.04
+    type: BATES
+  - properties:
+      coreDiameter: 0.01
+      diameter: 0.019
+      inhibitedEnds: Neither
+      length: 0.04
+    type: BATES
+  nozzle:
+    convAngle: 0.0
+    divAngle: 0.0
+    efficiency: 1.0
+    erosionCoeff: 0.0
+    exit: 0.007
+    slagCoeff: 0.0
+    throat: 0.007
+    throatLength: 0.0
+  propellant:
+    density: 1785.0
+    name: Nakka - KNDX
+    tabs:
+    - a: 1.7096289148678155e-06
+      k: 1.1308
+      m: 42.39
+      maxPressure: 779135.0
+      minPressure: 103425.0
+      n: 0.619
+      t: 1625.0
+    - a: 0.008553459092346196
+      k: 1.1308
+      m: 42.39
+      maxPressure: 2571835.0
+      minPressure: 779135.0
+      n: -0.009
+      t: 1625.0
+    - a: 2.90330733578913e-07
+      k: 1.1308
+      m: 42.39
+      maxPressure: 5929700.0
+      minPressure: 2571835.0
+      n: 0.688
+      t: 1625.0
+    - a: 0.1330457207587796
+      k: 1.1308
+      m: 42.39
+      maxPressure: 8501535.0
+      minPressure: 5929700.0
+      n: -0.148
+      t: 1625.0
+    - a: 1.0537671694797537e-05
+      k: 1.1308
+      m: 42.39
+      maxPressure: 11204375.0
+      minPressure: 8501535.0
+      n: 0.444
+      t: 1625.0
+type: !!python/object/apply:uilib.fileIO.fileTypes
+- 3
+version: !!python/tuple
+- 0
+- 5
+- 0
