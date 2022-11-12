@@ -24,7 +24,7 @@
 #include <MPU6050.h>
 #include <Servo.h>
 
-// # define SERIAL_DEBUG true
+//# define SERIAL_DEBUG true
 
 Servo servo;
 MPU6050 mpu;
@@ -86,7 +86,7 @@ const unsigned short LIFTOFF_THRESHOLD = 5;
 const unsigned int SECURITY_DEPLOYMENT_TIME = 4500; // Total flight for the current motor aprox 6.5 seconds
 
 // consecutive measures < apogee to run before apogee confirmation
-const unsigned short APOGEE_THRESHOLD = 3;
+const unsigned short APOGEE_THRESHOLD = 2;
 unsigned int consecutiveAltitudeDrop = APOGEE_THRESHOLD;
 
 // Pin Out
