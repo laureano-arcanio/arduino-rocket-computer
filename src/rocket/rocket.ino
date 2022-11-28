@@ -24,7 +24,7 @@
 #include <MPU6050.h>
 #include <Servo.h>
 
-//# define SERIAL_DEBUG true
+#define SERIAL_DEBUG true
 
 Servo servo;
 MPU6050 mpu;
@@ -52,8 +52,7 @@ unsigned long millisAtLoopStart = 0;
 bool apogeeHasFired = false;
 
 // Time interval to check for landed condition
-const unsigned short LANDED_CHECK_INTERVAL = 1000;
-const unsigned short LANDED_THRESHOLD = 2;
+const unsigned short LANDED_THRESHOLD = 3;
 unsigned short millisFromLastLandedCheck = 0;
 
 unsigned short landedCheckCounts = LANDED_THRESHOLD;
@@ -83,7 +82,11 @@ unsigned short status = STATUS_READY;
 const unsigned short LIFTOFF_THRESHOLD = 5;
 
 // Security deploy time
-const unsigned int SECURITY_DEPLOYMENT_TIME = 4500; // Total flight for the current motor aprox 6.5 seconds
+// D motor of around 15Ns
+//const unsigned int SECURITY_DEPLOYMENT_TIME = 4500; // Total flight for the current motor aprox 6.5 seconds
+
+// E motor of around 35Ns
+const unsigned int SECURITY_DEPLOYMENT_TIME = 12000;
 
 // consecutive measures < apogee to run before apogee confirmation
 const unsigned short APOGEE_THRESHOLD = 2;
