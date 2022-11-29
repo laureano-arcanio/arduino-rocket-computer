@@ -15,6 +15,6 @@ Check out the circuit [here](/schematics/protoboard.png)
 ![Full Assembly](https://github.com/laureano-arcanio/arduino-rocket-computer/blob/main/images/full_assembly_2.jpg)
 
 ### The Team
-![The Team](https://github.com/laureano-arcanio/arduino-rocket-computer/blob/main/images/rocket_team.jpg)
+![The Team](https://github.com/laureano-arcanio/arduino-rocket-computer/blob/main/images/rocket_team_2.jpg)
 
 ## Check all our FLights and Log [here](https://github.com/laureano-arcanio/arduino-rocket-computer/blob/main/LOGS.md)
