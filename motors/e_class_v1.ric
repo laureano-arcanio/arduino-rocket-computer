@@ -10,26 +10,26 @@ data:
     timestep: 0.03
   grains:
   - properties:
-      coreDiameter: 0.01
-      diameter: 0.019
+      coreDiameter: 0.006
+      diameter: 0.0195
       inhibitedEnds: Neither
-      length: 0.04
+      length: 0.0325
     type: BATES
   - properties:
-      coreDiameter: 0.01
-      diameter: 0.019
+      coreDiameter: 0.006
+      diameter: 0.0195
       inhibitedEnds: Neither
-      length: 0.04
+      length: 0.0325
     type: BATES
   nozzle:
-    convAngle: 0.0
-    divAngle: 0.0
+    convAngle: 30.0
+    divAngle: 15.0
     efficiency: 1.0
     erosionCoeff: 0.0
-    exit: 0.007
+    exit: 0.015
     slagCoeff: 0.0
-    throat: 0.007
-    throatLength: 0.0
+    throat: 0.003
+    throatLength: 0.002
   propellant:
     density: 1785.0
     name: Nakka - KNDX
