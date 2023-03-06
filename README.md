@@ -14,6 +14,11 @@ Check out the circuit [here](/schematics/protoboard.png)
 ### Full Assembly
 ![Full Assembly](https://github.com/laureano-arcanio/arduino-rocket-computer/blob/main/images/full_assembly_2.jpg)
 
+### STL Files
+![Stl files](https://github.com/laureano-arcanio/arduino-rocket-computer/tree/main/STLs)
+All body parts are printed with 1 wall, and 10% infill except for the payload area that needs supports for the servo mount. 
+
+
 ### The Team
 ![The Team](https://github.com/laureano-arcanio/arduino-rocket-computer/blob/main/images/rocket_team_2.jpg)
 
