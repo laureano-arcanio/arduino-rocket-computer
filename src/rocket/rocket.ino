@@ -80,7 +80,6 @@ unsigned short status = STATUS_READY;
 
 // Landed threshold
 const unsigned short LIFTOFF_THRESHOLD = 5;
-
 // Security deploy time
 // D motor of around 15Ns
 //const unsigned int SECURITY_DEPLOYMENT_TIME = 4500; // Total flight for the current motor aprox 6.5 seconds
@@ -478,10 +477,13 @@ void loop()
   }
 
   // Deploy Parachute / Rescue secuence
-  if (status == STATUS_APOGEE)
+  if (status >= STATUS_APOGEE)
   {
     // Eject nose cone with servo
-    deployParachute();
+    if (currentLoopAltitude < 100) {
+      deployParachute();
+    }
+    
   }
 
   // Detect Landing
