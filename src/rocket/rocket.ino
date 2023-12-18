@@ -24,7 +24,7 @@
 #include <MPU6050.h>
 #include <Servo.h>
 
-#define SERIAL_DEBUG true
+#define __SERIAL_DEBUG true
 
 Servo servo;
 MPU6050 mpu;
@@ -65,6 +65,7 @@ unsigned short eepromAvalableBytes = 1024;
 const unsigned short STATUS_READY = 20;
 const unsigned short STATUS_LIFTOFF = 40;
 const unsigned short STATUS_APOGEE = 60;
+const unsigned short STATUS_PARACHUTE_DEPLOYED = 65;
 const unsigned short STATUS_EMERGENCY_DEPLOY = 70;
 const unsigned short STATUS_LANDED = 80;
 unsigned short status = STATUS_READY;
@@ -86,6 +87,8 @@ const unsigned short LIFTOFF_THRESHOLD = 5;
 
 // E motor of around 35Ns
 const unsigned int SECURITY_DEPLOYMENT_TIME = 12000;
+// Altitud after apogee to fire chute
+const unsigned int PARACHUTE_DEPLOY_ALTITUDE = 150;
 
 // consecutive measures < apogee to run before apogee confirmation
 const unsigned short APOGEE_THRESHOLD = 2;
@@ -307,6 +310,7 @@ void setup()
 #endif
 
   Wire.begin();
+  Wire.setClock(400000);
 
   // LED pins
   pinMode(redLed, OUTPUT);
@@ -477,23 +481,24 @@ void loop()
   }
 
   // Deploy Parachute / Rescue secuence
-  if (status >= STATUS_APOGEE)
+  if (status >= STATUS_APOGEE and status < STATUS_PARACHUTE_DEPLOYED)
   {
     // Eject nose cone with servo
-    if (currentLoopAltitude < 100) {
+    if (currentLoopAltitude < PARACHUTE_DEPLOY_ALTITUDE) {
       deployParachute();
+      status = STATUS_PARACHUTE_DEPLOYED;
     }
     
   }
 
   // Detect Landing
   // Simplyfy landed check
-  // Just count 20 seconds after liftoff
+  // Just count 50 seconds after liftoff
   // This needs better computing, but this simplyfies it for now
   // [liftoff, ..]
   if (status >= STATUS_LIFTOFF)
   {
-    if (millisAtCurrentLoop - millisAtLiftoff > 20000) {
+    if (millisAtCurrentLoop - millisAtLiftoff > 50000) {
       status = STATUS_LANDED;
     }
   }
