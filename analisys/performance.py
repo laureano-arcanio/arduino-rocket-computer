@@ -5,22 +5,20 @@ from reportlab.lib.pagesizes import A4
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.interpolate import CubicSpline
 from scipy.optimize import fsolve
 from scipy.integrate import quad
 from scipy.interpolate import splrep, BSpline
 
 # file_name = 'logs_flight_6_sd.TXT'
 # file_name = 'logs_flight_10_D_motor.TXT'
-file_name = 'logs_flight_6_sd.TXT'
+# file_name = 'logs_flight_6_sd.TXT'
 # file_name = 'logs_flight_13_SB.TXT'
 # file_name = 'logs_flight_14_SB.TXT'
-# file_name = 'logs_flight_15_DX_12_03_2023.TXT'
+file_name = 'logs_flight_15_DX_12_03_2023.TXT'
 file_folder = '../flight_logs/'
 file_path = file_folder + file_name  # Replace 'path_to_your_file.csv' with your file path
 name_without_extension = file_name.split('.')[0]
 
-PSI_TO_ATM = 0.068046
 ROCKET_MASS = user_input = float(input("Please enter rocket mass in kg: "))
 
 column_names = ['Ms', 'Code', 'A0', 'CA', 'MA', 'T', 'AX', 'AY', 'AZ', 'GX', 'GY', 'GZ', 'EE']
@@ -29,13 +27,8 @@ data = pd.read_csv(file_path, sep="\t", header=0, names=column_names)
 def get_liftoff_index():
     return (data.index[data['CA'] >= 5].tolist()[0]) - 2
 
-def get_burnout_index(col_name, threeshold, start_index):
-    for index, row in data.iloc[start_index:].iterrows():
-        if row[col_name] < threeshold:
-            return index -1
-
-ignition_index = get_liftoff_index()
-data = data.drop(data.index[:ignition_index])
+liftoff_index = get_liftoff_index()
+data = data.drop(data.index[:liftoff_index])
 data.reset_index(drop=True, inplace=True)
 
 data['Ms'] -= data.loc[0, 'Ms']
@@ -43,7 +36,10 @@ data['Ms'] -= data.loc[0, 'Ms']
 data['S'] = data['Ms'] / 1000
 # create a column for delta time
 data['Delta'] = data['S'].diff().fillna(0)
+data['Vca'] = data['CA'].diff().fillna(0) / data['Delta'] # velocity from CA
+data['Aca'] = data['Vca'].diff().fillna(0) / data['Delta'] # acceleration from CA
 
+print(data.head())
 time = data['S']
 
 t, c, k = splrep(time, data['CA'], s=len(time))
@@ -105,23 +101,33 @@ info_text = (
     f'Average descent speed: {average_descent_speed} mts/s\n'
 )
 
-# print(info_text)
+print(info_text)
 
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
+fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 8))
 ax1.scatter(time, data['CA'], label='Original Data', s=1)
 ax1.plot(time, spl(time), label='Fitted Altitude')
 ax1.plot(time, spl(time, nu=1), label='Velocity (mts/s)', color="green")
+ax1.scatter(time, data['Vca'], label='Measured Velocity (mts/s)', color="green", s=1)
 ax1.set_xlabel('Time (s)')
 ax1.set_ylabel('Altitude (mts)')
 ax1.legend()
 ax1.grid(True)
 
+ax2.scatter(time, data['Aca'], label='Measured Acceleration (mts/s^2)', color="blue", s=1)
 ax2.plot(time, acceleration_function(time), label='Acceleration', color="blue")
 ax2.plot(scoped_power_time_range, acceleration_function(scoped_power_time_range), label='Power Flight', color="orange")
 ax2.set_xlabel('Time (s)')
 ax2.set_ylabel('Acceleration (mts/s^2)')
 ax2.legend()
-ax1.grid(True)
+ax2.grid(True)
+
+ax3.plot(data['S'], data['AX'] , label='Acceleration X', color="blue")
+ax3.plot(data['S'], data['AY'] , label='Acceleration Y', color="Green")
+ax3.plot(data['S'], data['AZ'] , label='Acceleration Z', color="Red")
+ax3.set_xlabel('Time (s)')
+ax3.set_ylabel('Acceleration (mts/s^2)')
+ax3.legend()
+ax3.grid(True)
 
 plt.tight_layout()
 # plt.show()
